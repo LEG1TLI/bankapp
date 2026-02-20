@@ -386,30 +386,23 @@ int main()
                 cout << "User Options:\n";
                 cout << "1. withdraw\n2. Deposit\n3. Get account Summary\n4. Close Account \n5. Logout\n";
                 cin >> bankingOption;
-                if (bankingOption == 1)
+                switch(bankingOption)
                 {
-                    cout << "Please enter a withdrawal amount: ";
-                    cin >> withdrawal;
-                    acc.withdraw(withdrawal);
-                }
-                else if (bankingOption == 2)
-                {
-                    cout << "Please enter a deposit amount: ";
-                    cin >> depositAmt;
-                    acc.deposit(depositAmt);
-                }
-                else if (bankingOption == 3)
-                {
-                    acc.accountsum();
-                }
-                else if (bankingOption == 4)
-                {
-                    acc.close(database);
-                    loggedIn = false;
-                }
-                else if (bankingOption == 5)
-                {
-                    loggedIn = false;
+                    case 1:
+                        cout << "Please enter a withdrawal amount: ";
+                        cin >> withdrawal;
+                        acc.withdraw(withdrawal);
+                    case 2:
+                        cout << "Please enter a deposit amount: ";
+                        cin >> depositAmt;
+                        acc.deposit(depositAmt);
+                    case 3:
+                        acc.accountsum();
+                    case 4:
+                        acc.close(database);
+                        loggedIn = false;
+                    case 5:
+                        loggedIn = false;
                 }
             }
         }
