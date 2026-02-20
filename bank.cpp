@@ -301,59 +301,62 @@ int main()
         {
             cout << "1. login\n2. create account\n3. manager login\n4. exit" << endl;
             cin >> choice;
-
-            if (choice == 1)
+            switch (choice)
             {
-                if (database.login())
-                {
-                    loggedIn = true;
-                    username = username;
-                    acc.setUsername(username);
-                }
-            } 
-            else if (choice == 2)
-            {
-                string newUsername, newPassword;
-                cout << "Enter new username: ";
-                cin >> newUsername;
-                cout << "Enter new password: ";
-                cin >> newPassword;
-                database.createusr(newUsername, newPassword);
-                username = newUsername;
-                acc.setUsername(username);
-            }
-            else if (choice == 3)
-            {
-                if (manager.login())
-                {
-                    loggedIn = true;
-                    managerLoggedIn = true;
-                    cout << "Manager Options\n";
-                    cout << "1. view all accounts\n2. logout\n";
-                    cin >> bankingOption;
-                    if (bankingOption == 1)
+                case 1:
+                    if (database.login())
                     {
-                        ifstream userFile("users.txt");
-                        if (userFile.is_open())
+                        loggedIn = true;
+                        username = username;
+                        acc.setUsername(username);
+                    }
+                    break;
+                case 2:
+                    {
+                    string newUsername, newPassword;
+                    cout << "Enter new username: ";
+                    cin >> newUsername;
+                    cout << "Enter new password: ";
+                    cin >> newPassword;
+                    database.createusr(newUsername, newPassword);
+                    username = newUsername;
+                    acc.setUsername(username);
+                    break;
+                    }
+                case 3:
+                    if (manager.login())
+                    {
+                        loggedIn = true;
+                        managerLoggedIn = true;
+                        cout << "manager options\n";
+                        cout << "1. view all accounts\n2. logout\n";
+                        cin >> bankingOption;
+                        switch(bankingOption)
                         {
-                            string line;
-                            while (getline(userFile, line))
-                            {
-                                cout << line << endl;
-                            }
-                            userFile.close();
+                            case 1:
+                                {
+                                ifstream userFile("users.txt");
+                                if (userFile.is_open())
+                                {
+                                    string line;
+                                    while (getline(userFile, line))
+                                    {
+                                        cout << line << endl;
+                                    }
+                                    userFile.close();
+                                }
+                                break;
+                                }
+                            case 2:
+                                loggedIn = false;
+                                managerLoggedIn = false;
+                                break;
                         }
                     }
-                    if (bankingOption == 2)
-                    {
-                        loggedIn = false;
-                        managerLoggedIn = false;
-                    }
-                }
-            } 
-            else if (choice == 4)
-            {
-                break;
+                    break;
+
+                case 4: 
+                    break;
             }
         }
         else 
