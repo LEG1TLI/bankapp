@@ -1,0 +1,1 @@
+Hey! This is my shot at making a banking management system to help me learn c++ concepts. I plan to start with this very simple version and eventually I will be turning this app into a vulnerable appplication for pentesting use with my raspberry pi cluster, but that is still in the works. For now, enjoy!
