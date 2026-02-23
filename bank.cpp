@@ -336,6 +336,7 @@ int main()
                                     }
                                     userFile.close();
                                 }
+                                database.dumpUsers(cout);
                                 break;
                                 }
                             case 2:
@@ -371,6 +372,7 @@ int main()
                         }
                         userFile.close();
                     }
+                    database.dumpUsers(cout);
                 }
                 if (bankingOption == 2)
                 {
