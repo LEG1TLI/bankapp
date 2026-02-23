@@ -4,8 +4,6 @@
 #include <unordered_map>
 #include <sstream>
 #include <vector>
-#include <random>
-#include <set>
 using namespace std;
 
 class Database
@@ -16,13 +14,36 @@ class Database
             loadusrfrmfile();
             loadmngrfrmfile();
         }
+    
+    bool userexists(const string &username)    
+    {
+        return users.find(username) != users.end();
+    }
+
+    double getBalance(const string &username)
+    {
+        auto it = users.find(username);
+        return (it != users.end()) ? it->second.second : 0.0;
+    }
+
+    void setBalance(const string &username, double newBalance)
+    {
+        auto it = users.find(username);
+        if (it != users.end())
+        {
+            it ->second.second = newBalance;
+            saveusrtofile();
+        }
+    }
+
+        
     void saveusrtofile()
     {
         ofstream userFile("users.txt");
 
         for (const auto &user : users)
         {
-            userFile << user.first << " " << user.second.first << " " << user.second.second << endl;
+            userFile << user.first << " " << user.second.first << " " << user.second.second << '\n';
         }
         userFile.close();
     }
@@ -39,11 +60,13 @@ class Database
         {
             istringstream iss(line);
             string username, password;
-            if (iss >> username >> password)
+            double balance;
+            if (iss >> username >> password >> balance)
             {
-                users[username].first = password;
+                users[username] = make_pair(password, balance);
             }
         }
+        userFile.close();
         return true;
     }
 
@@ -78,26 +101,37 @@ class Database
     void deleteusr(const string &username)
     {
         users.erase(username);
-        cout << "user deleted successfully." << endl;
+        saveusrtofile();
+        cout << "User successfully deleted." << endl;
     }
 
-    bool login()
+    bool login(string & outUsername)
     {
         string username, password;
         cout << "Please enter your username: ";
         cin >> username;
-        if (users.find(username) != users.end())
+        auto it = users.find(username);
+        if (it != users.end())
         {
             cout << "Please enter your password: ";
             cin >> password;
-            if (users[username].first == password)
+            if (it ->second.first == password)
             {
-                cout << "Login successful." << endl;
+                outUsername = username;
+                cout << "login successful. Welcome, " << username << endl;
                 return true;
             }
         }
         cout << "Invalid username or password. Please try again." << endl;
         return false;
+    }
+
+    void dumpUsers(ostream &os) const
+    {
+        for (const auto &u : users)
+        {
+            os << u.first << " " << u.second.first << " " << u.second.second << endl;
+        }
     }
     private:
         unordered_map<string, pair<string, double>> users;
@@ -118,23 +152,7 @@ class BankAccount
     public:
         BankAccount(const string &username, Database &db) : username(username), open(true), balance(0), database(db)
         {
-            ifstream file("users.txt");
-            string line;
-            while(getline(file, line))
-            {
-                istringstream iss(line);
-                string storedUsr, storedPwd;
-                double storedBlnc;
-                if (iss >> storedUsr >> storedPwd)
-                {
-                    if (storedUsr == username)
-                    {
-                        balance = storedBlnc;
-                        break;
-                    }
-                }
-            }
-
+            balance = database.getBalance(username);
         }
 
         void withdraw(double amount)
@@ -143,7 +161,7 @@ class BankAccount
             {
                 balance -= amount;
                 transactions.emplace_back("Withdrawal", amount);
-                cout << "Successfully witrdrew $" << amount << "from your account." << endl;
+                cout << "Successfully withdrew $" << amount << "from your account." << endl;
                 cout << "Your current balance is $" << balance << "." << endl;
                 updateBalanceInFile();
             }
@@ -181,12 +199,11 @@ class BankAccount
             cout << " " << endl;
         }
 
-        void close(Database &datbase)
+        void close()
         {
             open = false;
             database.deleteusr(username);
-            database.saveusrtofile();
-            cout << "Account closed successfully." << endl;
+            cout << "Account closed successfully. Goodbye!" << endl;
         }
 
         void setUsername(const string &newUsername)
@@ -196,32 +213,7 @@ class BankAccount
 
         void updateBalanceInFile()
         {
-            ifstream inputFile("users.txt");
-            ofstream outputFile("temp.txt");
-
-            string line;
-            while(getline(inputFile, line))
-            {
-                istringstream iss(line);
-                string storedUsr, storedPwd;
-                double storedBlnc;
-
-                if(iss >>storedUsr >> storedPwd)
-                {
-                    if (storedUsr == username)
-                    {
-                        outputFile << username << " " << storedPwd << " " << balance << endl;
-                    }
-                    else 
-                    {
-                        outputFile << line << endl;
-                    }
-                }
-            }
-            inputFile.close();
-            outputFile.close();
-            remove("users.txt");
-            rename("temp.txt", "users.txt");
+            database.setBalance(username, balance);
         }
     private:
         string username;
@@ -304,10 +296,9 @@ int main()
             switch (choice)
             {
                 case 1:
-                    if (database.login())
+                    if (database.login(username))
                     {
                         loggedIn = true;
-                        username = username;
                         acc.setUsername(username);
                     }
                     break;
@@ -356,6 +347,8 @@ int main()
                     break;
 
                 case 4: 
+                    database.saveusrtofile();
+                    return 0;
                     break;
             }
         }
@@ -366,7 +359,7 @@ int main()
                 cout << "Manager options\n";
                 cout << "1. Get list of users and account details\n2. Logout\n";
                 cin >> bankingOption;
-                if (bankingOption == 1);
+                if (bankingOption == 1)
                 {
                     ifstream userFile("users.txt");
                     if (userFile.is_open())
@@ -395,17 +388,22 @@ int main()
                         cout << "Please enter a withdrawal amount: ";
                         cin >> withdrawal;
                         acc.withdraw(withdrawal);
+                        break;
                     case 2:
                         cout << "Please enter a deposit amount: ";
                         cin >> depositAmt;
                         acc.deposit(depositAmt);
+                        break;
                     case 3:
                         acc.accountsum();
+                        break;
                     case 4:
-                        acc.close(database);
+                        acc.close();
                         loggedIn = false;
+                        break;
                     case 5:
                         loggedIn = false;
+                        break;
                 }
             }
         }
