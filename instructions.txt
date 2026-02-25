@@ -1,0 +1,814 @@
+I'll help you create a plan to transform this into a vulnerable application for penetration testing practice. Let me first research the current codebase and then we'll discuss the architecture and attack vectors. 
+
+Research codebase structure
+
+Read [](file:///c%3A/Users/liam.stair/Documents/bankapp/bank.cpp)
+
+Read [](file:///c%3A/Users/liam.stair/Documents/bankapp/README.md)
+
+Now I need to clarify some key architectural decisions before creating a comprehensive plan: 
+
+Asked 3 questions (Tech Stack, Pi Setup, Attack Focus)
+
+Perfect! Based on your preferences for C++ and realistic vulnerabilities, let me create a comprehensive plan:
+
+## Plan: Transform C++ Bank App into Realistic Vulnerable Homelab Application
+
+You'll convert this console application into a web-based API with a frontend, intentionally incorporating real-world vulnerabilities found in legacy enterprise applications. The 4-Pi distributed architecture will simulate a small business banking infrastructure, enabling both application-level and infrastructure-level penetration testing.
+
+**TL;DR**: Migrate to Crow C++ web framework, create RESTful API backend, add simple web frontend (HTML/JS), deploy across 4 Raspberry Pis in a multi-tier architecture (web server, application server, database, attacker/monitoring box). Implement 15+ realistic vulnerability classes including SQL injection (migrating to SQLite), authentication bypass, session management flaws, buffer overflows, insecure API endpoints, and IDOR. The setup mirrors real vulnerable enterprise apps while maintaining the original C++ codebase philosophy.
+
+**Steps**
+
+1. **Application Modernization**
+   - Add Crow web framework to bank.cpp - lightweight C++ HTTP server library
+   - Convert existing `Database`, `BankAccount`, `BankManager` classes to handle HTTP requests/responses instead of console I/O
+   - Migrate from flat files (users.txt, managers.txt) to SQLite database for SQL injection practice
+   - Create RESTful API endpoints: `POST /api/login`, `POST /api/register`, `GET /api/balance`, `POST /api/withdraw`, `POST /api/deposit`, `GET /api/transactions`, `DELETE /api/account`, `GET /api/admin/users`
+   - Implement basic session management using cookies (intentionally flawed for practice)
+   - Add CORS middleware (misconfigured for testing)
+
+2. **Frontend Development**
+   - Create `public/` directory with HTML/CSS/JavaScript frontend
+   - Build login page (`login.html`), user dashboard (`dashboard.html`), admin panel (`admin.html`)
+   - Use vanilla JavaScript with XMLHttpRequest/Fetch API (avoid modern frameworks to expose client-side vulnerabilities)
+   - Include inline JavaScript and DOM-based XSS opportunities
+   - Store session tokens in localStorage (insecure pattern for practice)
+
+3. **Intentional Vulnerabilities to Implement**
+   - **SQL Injection**: Raw SQL queries without parameterization in login, balance retrieval, user creation
+   - **Authentication Bypass**: Comment-based SQL injection in login (`' OR '1'='1' --`)
+   - **Broken Access Control**: IDOR on `/api/account/{id}` endpoint; users can access other accounts by changing ID
+   - **Insecure Direct Object References**: Transaction IDs predictable and unvalidated
+   - **Session Management**: No session timeout, predictable session tokens, session fixation vulnerability
+   - **XSS (Stored)**: Username/transaction notes reflected without sanitization
+   - **XSS (Reflected)**: Error messages contain unsanitized user input
+   - **CSRF**: No anti-CSRF tokens on state-changing operations
+   - **Sensitive Data Exposure**: Passwords visible in `/api/admin/users` response, sent over HTTP
+   - **Buffer Overflow**: Intentional buffer overflow in C++ username/password handling (advanced practice)
+   - **Race Condition**: Concurrent withdraw requests can overdraw account
+   - **Mass Assignment**: API accepts arbitrary JSON fields allowing privilege escalation (`isAdmin` flag)
+   - **Information Disclosure**: Verbose error messages reveal database structure, different responses for existing vs non-existing users
+   - **Weak Password Policy**: No complexity requirements, allows passwords like "123"
+   - **Missing Rate Limiting**: Brute force attacks possible on login endpoint
+   - **Insecure Deserialization**: Accept serialized C++ objects in cookie data
+   - **Path Traversal**: File upload feature (add later) vulnerable to liam.stair attacks
+   - **API Enumeration**: Sequential user IDs allow account discovery
+   - **Privilege Escalation**: Manager role stored client-side, can be manipulated
+   - **Memory Corruption**: Use-after-free or double-free in session cleanup
+
+4. **Raspberry Pi Distributed Architecture**
+   - **Pi 1 - Web/Proxy Server (nginx)**: Serves static frontend, reverse proxy to application server, intentionally misconfigured SSL/TLS
+   - **Pi 2 - Application Server**: Runs compiled C++ Crow application, exposed on internal network
+   - **Pi 3 - Database Server**: Hosts SQLite database file (exposed via network share for testing), backup scripts with cron
+   - **Pi 4 - Attacker/Monitoring Box**: Kali Linux installation, network monitoring tools (Wireshark, tcpdump), deliberately on same subnet to practice lateral movement
+   - Network: Configure static IPs (192.168.100.10-13), create vulnerable network segments, disable firewall rules strategically
+   - SSH access with weak credentials on all Pis for privilege escalation practice
+
+5. **Build and Deployment Infrastructure**
+   - Create `Makefile` for cross-compiling to ARM architecture
+   - Write `docker-compose.yml` for local development/testing before Pi deployment
+   - Create deployment scripts: `deploy.sh` for copying binaries to Pis, `setup-db.sh` for database initialization
+   - Add systemd service files (`bankapp.service`) for auto-starting application on boot
+   - Configure nginx with intentional misconfigurations: directory listing enabled, sensitive files accessible, verbose error pages
+
+6. **Database Schema Design**
+   - Create SQLite schema in `schema.sql`:
+     - `users` table: id, username, password (plaintext initially), balance, role, created_at
+     - `managers` table: id, username, password, permissions
+     - `transactions` table: id, user_id, type, amount, timestamp, description
+     - `sessions` table: id, user_id, token, created_at, last_accessed
+   - Add SQL injection cheat sheet comments in schema file for practice
+   - Include backup mechanism that stores passwords in plaintext backup files
+
+7. **Documentation and Learning Materials**
+   - Create `VULNERABILITIES.md` listing all implemented vulnerabilities (hidden by default, revealed after solving)
+   - Write `SETUP.md` for deploying to Raspberry Pi homelab
+   - Add `CHALLENGES.md` with progressive difficulty levels (beginner → advanced)
+   - Include network diagram showing Pi architecture
+   - Create flags/hidden achievements at different privilege levels (user → manager → system)
+   - Document common attack tools to use: SQLMap, Burp Suite, OWASP ZAP, Metasploit
+   - Add `HINTS.md` with gradual disclosure hints for each vulnerability
+
+8. **Configuration Files**
+   - `config.json`: Application settings with database path, session timeout, API keys (hardcoded), debug mode flag
+   - `.env.example`: Environment variables including intentionally exposed secrets
+   - `nginx.conf`: Reverse proxy configuration with security misconfigurations
+   - `network-setup.sh`: Script to configure Pi network interfaces and routing
+
+9. **Testing and Validation**
+   - Write `exploit-examples/` directory with proof-of-concept scripts for each vulnerability
+   - Create automated tests to verify vulnerabilities are exploitable
+   - Test deployment on local VMs before Raspberry Pi deployment
+   - Validate cross-compilation and ARM compatibility
+   - Ensure all exploits work from Pi 4 (attacker box) against the infrastructure
+
+10. **Publication Preparation**
+    - Add license (MIT suggested for educational tools)
+    - Create comprehensive README.md with warnings about intentional vulnerabilities
+    - Add disclaimer: "FOR EDUCATIONAL PURPOSES ONLY - DO NOT DEPLOY ON PUBLIC INTERNET"
+    - Include Bill of Materials for Raspberry Pi setup
+    - Create GitHub repo structure with organized directories
+    - Add screenshots/demo videos for README
+    - Write contribution guidelines for others who want to add vulnerabilities
+
+**Verification**
+- Compile and run locally with `make && ./bankapp`
+- Test API endpoints with `curl` or Postman against all CRUD operations
+- Verify SQL injection works: `curl -X POST -d "username=admin'--&password=x" http://localhost:8080/api/login`
+- Cross-compile for ARM: `make arm` and test binary on Raspberry Pi
+- Deploy to all 4 Pis and verify network connectivity between tiers
+- From Pi 4, run SQLMap against login endpoint and confirm database dump
+- Attempt XSS payloads in username fields and verify execution
+- Test IDOR by accessing `/api/account/2` while logged in as user 1
+- Verify buffer overflow crashes application with oversized input
+- Run automated exploit scripts from `exploit-examples/` directory
+- Use Burp Suite to intercept and modify requests demonstrating CSRF
+- Practice privilege escalation from user to manager role
+- Attempt lateral movement from Pi 1 to Pi 2 to Pi 3
+
+**Decisions**
+- **Chose C++/Crow over rewrite**: Maintains current codebase, adds security challenges unique to C++ (memory corruption), demonstrates that C++ web apps exist in legacy enterprises
+- **Distributed architecture over single Pi**: Realistic enterprise simulation, enables network pentesting, practices lateral movement; use Pi 1 (nginx proxy), Pi 2 (app server), Pi 3 (database), Pi 4 (attacker box)
+- **SQLite over flat files**: Still lightweight, enables SQL injection practice, maintains simplicity for Raspberry Pi resource constraints
+- **Focused on OWASP Top 10 + C++ specific vulnerabilities**: Real-world relevance, mirrors actual vulnerable legacy applications, comprehensive skill development across web and system-level security
+
+---
+
+This plan transforms your console app into a multi-tier vulnerable infrastructure perfect for homelab pentesting practice. The C++ backend with intentional memory safety issues combined with web application vulnerabilities creates a unique learning environment. Ready to proceed?
+
+User: I want to turn this bank management app into a vulnerable application for penetration testing. I plan to host it on my homelab consisting of four raspberry pis. I want to know how I should set this app up in a way so that it can be hosted on my homelab, and what different types of attack vectors I could implement for my own practice. The goal is to hone pentesting skills in a meaningful way, and also to eventually publish this application for others to use. 
+
+GitHub Copilot: I'll help you create a plan to transform this into a vulnerable application for penetration testing practice. Let me first research the current codebase and then we'll discuss the architecture and attack vectors. 
+
+Research codebase structure
+
+Read [](file:///c%3A/Users/liam.stair/Documents/bankapp/bank.cpp)
+
+Read [](file:///c%3A/Users/liam.stair/Documents/bankapp/README.md)
+
+Now I need to clarify some key architectural decisions before creating a comprehensive plan: 
+
+Asked 3 questions (Tech Stack, Pi Setup, Attack Focus)
+
+Perfect! Based on your preferences for C++ and realistic vulnerabilities, let me create a comprehensive plan:
+
+## Plan: Transform C++ Bank App into Realistic Vulnerable Homelab Application
+
+You'll convert this console application into a web-based API with a frontend, intentionally incorporating real-world vulnerabilities found in legacy enterprise applications. The 4-Pi distributed architecture will simulate a small business banking infrastructure, enabling both application-level and infrastructure-level penetration testing.
+
+**TL;DR**: Migrate to Crow C++ web framework, create RESTful API backend, add simple web frontend (HTML/JS), deploy across 4 Raspberry Pis in a multi-tier architecture (web server, application server, database, attacker/monitoring box). Implement 15+ realistic vulnerability classes including SQL injection (migrating to SQLite), authentication bypass, session management flaws, buffer overflows, insecure API endpoints, and IDOR. The setup mirrors real vulnerable enterprise apps while maintaining the original C++ codebase philosophy.
+
+**Steps**
+
+1. **Application Modernization**
+   - Add Crow web framework to bank.cpp - lightweight C++ HTTP server library
+   - Convert existing `Database`, `BankAccount`, `BankManager` classes to handle HTTP requests/responses instead of console I/O
+   - Migrate from flat files (users.txt, managers.txt) to SQLite database for SQL injection practice
+   - Create RESTful API endpoints: `POST /api/login`, `POST /api/register`, `GET /api/balance`, `POST /api/withdraw`, `POST /api/deposit`, `GET /api/transactions`, `DELETE /api/account`, `GET /api/admin/users`
+   - Implement basic session management using cookies (intentionally flawed for practice)
+   - Add CORS middleware (misconfigured for testing)
+
+2. **Frontend Development**
+   - Create `public/` directory with HTML/CSS/JavaScript frontend
+   - Build login page (`login.html`), user dashboard (`dashboard.html`), admin panel (`admin.html`)
+   - Use vanilla JavaScript with XMLHttpRequest/Fetch API (avoid modern frameworks to expose client-side vulnerabilities)
+   - Include inline JavaScript and DOM-based XSS opportunities
+   - Store session tokens in localStorage (insecure pattern for practice)
+
+3. **Intentional Vulnerabilities to Implement**
+   - **SQL Injection**: Raw SQL queries without parameterization in login, balance retrieval, user creation
+   - **Authentication Bypass**: Comment-based SQL injection in login (`' OR '1'='1' --`)
+   - **Broken Access Control**: IDOR on `/api/account/{id}` endpoint; users can access other accounts by changing ID
+   - **Insecure Direct Object References**: Transaction IDs predictable and unvalidated
+   - **Session Management**: No session timeout, predictable session tokens, session fixation vulnerability
+   - **XSS (Stored)**: Username/transaction notes reflected without sanitization
+   - **XSS (Reflected)**: Error messages contain unsanitized user input
+   - **CSRF**: No anti-CSRF tokens on state-changing operations
+   - **Sensitive Data Exposure**: Passwords visible in `/api/admin/users` response, sent over HTTP
+   - **Buffer Overflow**: Intentional buffer overflow in C++ username/password handling (advanced practice)
+   - **Race Condition**: Concurrent withdraw requests can overdraw account
+   - **Mass Assignment**: API accepts arbitrary JSON fields allowing privilege escalation (`isAdmin` flag)
+   - **Information Disclosure**: Verbose error messages reveal database structure, different responses for existing vs non-existing users
+   - **Weak Password Policy**: No complexity requirements, allows passwords like "123"
+   - **Missing Rate Limiting**: Brute force attacks possible on login endpoint
+   - **Insecure Deserialization**: Accept serialized C++ objects in cookie data
+   - **Path Traversal**: File upload feature (add later) vulnerable to liam.stair attacks
+   - **API Enumeration**: Sequential user IDs allow account discovery
+   - **Privilege Escalation**: Manager role stored client-side, can be manipulated
+   - **Memory Corruption**: Use-after-free or double-free in session cleanup
+
+4. **Raspberry Pi Distributed Architecture**
+   - **Pi 1 - Web/Proxy Server (nginx)**: Serves static frontend, reverse proxy to application server, intentionally misconfigured SSL/TLS
+   - **Pi 2 - Application Server**: Runs compiled C++ Crow application, exposed on internal network
+   - **Pi 3 - Database Server**: Hosts SQLite database file (exposed via network share for testing), backup scripts with cron
+   - **Pi 4 - Attacker/Monitoring Box**: Kali Linux installation, network monitoring tools (Wireshark, tcpdump), deliberately on same subnet to practice lateral movement
+   - Network: Configure static IPs (192.168.100.10-13), create vulnerable network segments, disable firewall rules strategically
+   - SSH access with weak credentials on all Pis for privilege escalation practice
+
+5. **Build and Deployment Infrastructure**
+   - Create `Makefile` for cross-compiling to ARM architecture
+   - Write `docker-compose.yml` for local development/testing before Pi deployment
+   - Create deployment scripts: `deploy.sh` for copying binaries to Pis, `setup-db.sh` for database initialization
+   - Add systemd service files (`bankapp.service`) for auto-starting application on boot
+   - Configure nginx with intentional misconfigurations: directory listing enabled, sensitive files accessible, verbose error pages
+
+6. **Database Schema Design**
+   - Create SQLite schema in `schema.sql`:
+     - `users` table: id, username, password (plaintext initially), balance, role, created_at
+     - `managers` table: id, username, password, permissions
+     - `transactions` table: id, user_id, type, amount, timestamp, description
+     - `sessions` table: id, user_id, token, created_at, last_accessed
+   - Add SQL injection cheat sheet comments in schema file for practice
+   - Include backup mechanism that stores passwords in plaintext backup files
+
+7. **Documentation and Learning Materials**
+   - Create `VULNERABILITIES.md` listing all implemented vulnerabilities (hidden by default, revealed after solving)
+   - Write `SETUP.md` for deploying to Raspberry Pi homelab
+   - Add `CHALLENGES.md` with progressive difficulty levels (beginner → advanced)
+   - Include network diagram showing Pi architecture
+   - Create flags/hidden achievements at different privilege levels (user → manager → system)
+   - Document common attack tools to use: SQLMap, Burp Suite, OWASP ZAP, Metasploit
+   - Add `HINTS.md` with gradual disclosure hints for each vulnerability
+
+8. **Configuration Files**
+   - `config.json`: Application settings with database path, session timeout, API keys (hardcoded), debug mode flag
+   - `.env.example`: Environment variables including intentionally exposed secrets
+   - `nginx.conf`: Reverse proxy configuration with security misconfigurations
+   - `network-setup.sh`: Script to configure Pi network interfaces and routing
+
+9. **Testing and Validation**
+   - Write `exploit-examples/` directory with proof-of-concept scripts for each vulnerability
+   - Create automated tests to verify vulnerabilities are exploitable
+   - Test deployment on local VMs before Raspberry Pi deployment
+   - Validate cross-compilation and ARM compatibility
+   - Ensure all exploits work from Pi 4 (attacker box) against the infrastructure
+
+10. **Publication Preparation**
+    - Add license (MIT suggested for educational tools)
+    - Create comprehensive README.md with warnings about intentional vulnerabilities
+    - Add disclaimer: "FOR EDUCATIONAL PURPOSES ONLY - DO NOT DEPLOY ON PUBLIC INTERNET"
+    - Include Bill of Materials for Raspberry Pi setup
+    - Create GitHub repo structure with organized directories
+    - Add screenshots/demo videos for README
+    - Write contribution guidelines for others who want to add vulnerabilities
+
+**Verification**
+- Compile and run locally with `make && ./bankapp`
+- Test API endpoints with `curl` or Postman against all CRUD operations
+- Verify SQL injection works: `curl -X POST -d "username=admin'--&password=x" http://localhost:8080/api/login`
+- Cross-compile for ARM: `make arm` and test binary on Raspberry Pi
+- Deploy to all 4 Pis and verify network connectivity between tiers
+- From Pi 4, run SQLMap against login endpoint and confirm database dump
+- Attempt XSS payloads in username fields and verify execution
+- Test IDOR by accessing `/api/account/2` while logged in as user 1
+- Verify buffer overflow crashes application with oversized input
+- Run automated exploit scripts from `exploit-examples/` directory
+- Use Burp Suite to intercept and modify requests demonstrating CSRF
+- Practice privilege escalation from user to manager role
+- Attempt lateral movement from Pi 1 to Pi 2 to Pi 3
+
+**Decisions**
+- **Chose C++/Crow over rewrite**: Maintains current codebase, adds security challenges unique to C++ (memory corruption), demonstrates that C++ web apps exist in legacy enterprises
+- **Distributed architecture over single Pi**: Realistic enterprise simulation, enables network pentesting, practices lateral movement; use Pi 1 (nginx proxy), Pi 2 (app server), Pi 3 (database), Pi 4 (attacker box)
+- **SQLite over flat files**: Still lightweight, enables SQL injection practice, maintains simplicity for Raspberry Pi resource constraints
+- **Focused on OWASP Top 10 + C++ specific vulnerabilities**: Real-world relevance, mirrors actual vulnerable legacy applications, comprehensive skill development across web and system-level security
+
+---
+
+This plan transforms your console app into a multi-tier vulnerable infrastructure perfect for homelab pentesting practice. The C++ backend with intentional memory safety issues combined with web application vulnerabilities creates a unique learning environment. Ready to proceed?
+
+User: So how do I go about actually doing all od this? walk me through this step by step so that I can learn about the code as I write it 
+
+GitHub Copilot: Great! Let's start step-by-step. I'll guide you through transforming this into a vulnerable web application, explaining each concept as we go.
+
+## Phase 1: Setting Up the Web Framework (Crow)
+
+First, let's understand what we're doing: converting your console app into a web server that handles HTTP requests.
+
+### Step 1.1: Install Crow Framework
+
+Crow is a lightweight C++ web framework (similar to Flask for Python). Download it:
+
+```bash
+cd c:\Users\liam.stair\Documents\bankapp
+git clone https://github.com/CrowCpp/Crow.git
+```
+
+Or download the single-header version from https://crowcpp.org/master/getting_started/setup/
+
+### Step 1.2: Create a Simple Web Server Test
+
+Let's create a new file to test Crow before modifying your main code:
+
+````cpp
+#include "crow_all.h"
+#include <iostream>
+
+int main()
+{
+    crow::SimpleApp app;
+
+    // Define a simple route
+    CROW_ROUTE(app, "/")
+    ([](){
+        return "Hello! Bank Server is Running!";
+    });
+
+    // Start server on port 8080
+    app.port(8080).multithreaded().run();
+}
+````
+
+**Explanation:**
+- `crow::SimpleApp` creates a web server
+- `CROW_ROUTE` defines an endpoint (like a URL path)
+- The lambda function `[](){}` handles requests to that path
+- `port(8080)` means access via `http://localhost:8080`
+
+### Step 1.3: Compile and Test
+
+Create a `Makefile`:
+
+````makefile
+CXX = g++
+CXXFLAGS = -std=c++14 -I./Crow/include -pthread
+LDFLAGS = -pthread
+
+test_server: test_server.cpp
+	$(CXX) $(CXXFLAGS) -o test_server test_server.cpp $(LDFLAGS)
+
+clean:
+	rm -f test_server test_server.exe
+````
+
+Compile and run:
+```bash
+make test_server
+./test_server
+```
+
+Visit `http://localhost:8080` in your browser. You should see "Hello! Bank Server is Running!"
+
+---
+
+## Phase 2: Convert Database Class to Use SQLite
+
+Now let's add SQL injection vulnerabilities. We'll migrate from text files to SQLite.
+
+### Step 2.1: Install SQLite
+
+Download SQLite from https://www.sqlite.org/download.html or:
+```bash
+# On Windows with chocolatey
+choco install sqlite
+
+# Or download sqlite3.dll and sqlite3.h manually
+```
+
+### Step 2.2: Create Database Schema
+
+````sql
+-- Bank Application Database Schema
+-- WARNING: This schema is intentionally vulnerable for educational purposes
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,  -- VULNERABILITY: Plaintext passwords
+    balance REAL DEFAULT 0.0,
+    role TEXT DEFAULT 'user',  -- VULNERABILITY: Role stored in DB, can be manipulated
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS managers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,  -- VULNERABILITY: Plaintext passwords
+    permissions TEXT DEFAULT 'basic'
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    type TEXT NOT NULL,
+    amount REAL NOT NULL,
+    description TEXT,  -- VULNERABILITY: Unsanitized text (XSS potential)
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    token TEXT UNIQUE NOT NULL,  -- VULNERABILITY: Predictable tokens
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+-- Insert default vulnerable users for testing
+INSERT OR IGNORE INTO users (username, password, balance, role) VALUES 
+    ('admin', 'admin123', 10000.0, 'admin'),
+    ('alice', 'password', 500.0, 'user'),
+    ('bob', '12345', 1000.0, 'user');
+
+INSERT OR IGNORE INTO managers (username, password, permissions) VALUES 
+    ('manager', 'manager', 'full'),
+    ('supervisor', 'super123', 'limited');
+````
+
+**Key Vulnerabilities Introduced:**
+1. Plaintext passwords
+2. Role stored in database (can be modified via SQL injection)
+3. No input sanitization fields
+4. Predictable session tokens
+
+### Step 2.3: Update Database Class with SQLite (Vulnerable Version)
+
+````cpp
+#ifndef DATABASE_H
+#define DATABASE_H
+
+#include <sqlite3.h>
+#include <string>
+#include <iostream>
+#include <sstream>
+
+class Database
+{
+public:
+    Database(const std::string& dbPath = "bank.db")
+    {
+        // Open database connection
+        if (sqlite3_open(dbPath.c_str(), &db) != SQLITE_OK)
+        {
+            std::cerr << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
+        }
+        
+        // Load schema from file
+        initializeSchema();
+    }
+
+    ~Database()
+    {
+        sqlite3_close(db);
+    }
+
+    // VULNERABILITY: SQL Injection - No parameterized queries
+    bool authenticateUser(const std::string& username, const std::string& password, std::string& outRole)
+    {
+        // DANGEROUS: Direct string concatenation in SQL
+        std::string query = "SELECT role FROM users WHERE username = '" + username + 
+                           "' AND password = '" + password + "'";
+        
+        std::cout << "[DEBUG] Query: " << query << std::endl;  // VULNERABILITY: Verbose logging
+        
+        sqlite3_stmt* stmt;
+        bool authenticated = false;
+        
+        if (sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                outRole = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+                authenticated = true;
+            }
+        }
+        else
+        {
+            // VULNERABILITY: Detailed error messages expose DB structure
+            std::cerr << "SQL Error: " << sqlite3_errmsg(db) << std::endl;
+        }
+        
+        sqlite3_finalize(stmt);
+        return authenticated;
+    }
+
+    // VULNERABILITY: SQL Injection in user creation
+    bool createUser(const std::string& username, const std::string& password)
+    {
+        std::string query = "INSERT INTO users (username, password, balance, role) VALUES ('" + 
+                           username + "', '" + password + "', 0.0, 'user')";
+        
+        char* errMsg;
+        if (sqlite3_exec(db, query.c_str(), nullptr, nullptr, &errMsg) != SQLITE_OK)
+        {
+            std::cerr << "SQL Error: " << errMsg << std::endl;
+            sqlite3_free(errMsg);
+            return false;
+        }
+        return true;
+    }
+
+    // VULNERABILITY: IDOR - No authorization check, just user_id
+    double getBalance(int userId)
+    {
+        std::string query = "SELECT balance FROM users WHERE id = " + std::to_string(userId);
+        
+        sqlite3_stmt* stmt;
+        double balance = 0.0;
+        
+        if (sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                balance = sqlite3_column_double(stmt, 0);
+            }
+        }
+        
+        sqlite3_finalize(stmt);
+        return balance;
+    }
+
+    // VULNERABILITY: No transaction, race condition possible
+    bool updateBalance(int userId, double newBalance)
+    {
+        std::string query = "UPDATE users SET balance = " + std::to_string(newBalance) + 
+                           " WHERE id = " + std::to_string(userId);
+        
+        char* errMsg;
+        if (sqlite3_exec(db, query.c_str(), nullptr, nullptr, &errMsg) != SQLITE_OK)
+        {
+            std::cerr << "SQL Error: " << errMsg << std::endl;
+            sqlite3_free(errMsg);
+            return false;
+        }
+        return true;
+    }
+
+    // Get user ID by username (for session management)
+    int getUserId(const std::string& username)
+    {
+        std::string query = "SELECT id FROM users WHERE username = '" + username + "'";
+        
+        sqlite3_stmt* stmt;
+        int userId = -1;
+        
+        if (sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+        {
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                userId = sqlite3_column_int(stmt, 0);
+            }
+        }
+        
+        sqlite3_finalize(stmt);
+        return userId;
+    }
+
+private:
+    sqlite3* db;
+
+    void initializeSchema()
+    {
+        // Read and execute schema.sql
+        std::ifstream schemaFile("schema.sql");
+        if (!schemaFile)
+        {
+            std::cerr << "Warning: schema.sql not found" << std::endl;
+            return;
+        }
+
+        std::stringstream buffer;
+        buffer << schemaFile.rdbuf();
+        std::string schema = buffer.str();
+
+        char* errMsg;
+        if (sqlite3_exec(db, schema.c_str(), nullptr, nullptr, &errMsg) != SQLITE_OK)
+        {
+            std::cerr << "Schema Error: " << errMsg << std::endl;
+            sqlite3_free(errMsg);
+        }
+    }
+};
+
+#endif
+````
+
+**What We Did:**
+1. Replaced file I/O with SQLite queries
+2. **Intentionally** used string concatenation instead of prepared statements (SQL injection vulnerability)
+3. Added verbose error messages (information disclosure)
+4. No authorization checks in `getBalance()` (IDOR vulnerability)
+5. No database transactions (race condition vulnerability)
+
+---
+
+## Phase 3: Create REST API Endpoints
+
+Now let's create the web API using Crow.
+
+### Step 3.1: Create Main Server File
+
+````cpp
+#include "crow_all.h"
+#include "database.h"
+#include <unordered_map>
+#include <random>
+#include <ctime>
+
+// VULNERABILITY: Simple sequential session token generation
+std::string generateSessionToken()
+{
+    static int counter = 1000;
+    return "SESSION_" + std::to_string(counter++);  // PREDICTABLE!
+}
+
+// In-memory session storage (VULNERABILITY: No persistence, easy to enumerate)
+std::unordered_map<std::string, int> activeSessions;  // token -> user_id
+
+int main()
+{
+    crow::SimpleApp app;
+    Database db("bank.db");
+
+    // VULNERABILITY: CORS allows all origins
+    auto& cors = app.get_middleware<crow::CORSHandler>();
+
+    // API Endpoint: User Login
+    CROW_ROUTE(app, "/api/login").methods("POST"_method)
+    ([&db](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        
+        if (!body)
+            return crow::response(400, "Invalid JSON");
+
+        std::string username = body["username"].s();
+        std::string password = body["password"].s();
+        std::string role;
+
+        // VULNERABILITY: SQL Injection here!
+        if (db.authenticateUser(username, password, role))
+        {
+            int userId = db.getUserId(username);
+            std::string token = generateSessionToken();
+            activeSessions[token] = userId;
+
+            crow::json::wvalue response;
+            response["success"] = true;
+            response["token"] = token;
+            response["userId"] = userId;  // VULNERABILITY: Exposing user ID
+            response["role"] = role;
+            response["message"] = "Login successful";
+            
+            return crow::response(200, response);
+        }
+        else
+        {
+            // VULNERABILITY: Different response for invalid username vs wrong password
+            crow::json::wvalue response;
+            response["success"] = false;
+            response["message"] = "Invalid credentials for user: " + username;  // Info leak
+            return crow::response(401, response);
+        }
+    });
+
+    // API Endpoint: Register New User
+    CROW_ROUTE(app, "/api/register").methods("POST"_method)
+    ([&db](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        
+        if (!body)
+            return crow::response(400, "Invalid JSON");
+
+        std::string username = body["username"].s();
+        std::string password = body["password"].s();
+
+        // VULNERABILITY: No password complexity requirements
+        // VULNERABILITY: SQL Injection in createUser
+        if (db.createUser(username, password))
+        {
+            crow::json::wvalue response;
+            response["success"] = true;
+            response["message"] = "User created successfully";
+            return crow::response(201, response);
+        }
+        else
+        {
+            crow::json::wvalue response;
+            response["success"] = false;
+            response["message"] = "Failed to create user";
+            return crow::response(500, response);
+        }
+    });
+
+    // API Endpoint: Get Balance
+    // VULNERABILITY: IDOR - userId in URL, no session validation
+    CROW_ROUTE(app, "/api/balance/<int>")
+    ([&db](int userId){
+        double balance = db.getBalance(userId);
+        
+        crow::json::wvalue response;
+        response["userId"] = userId;
+        response["balance"] = balance;
+        
+        return crow::response(200, response);
+    });
+
+    // API Endpoint: Withdraw Money
+    // VULNERABILITY: No CSRF protection, race condition possible
+    CROW_ROUTE(app, "/api/withdraw").methods("POST"_method)
+    ([&db](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        
+        if (!body)
+            return crow::response(400, "Invalid JSON");
+
+        int userId = body["userId"].i();
+        double amount = body["amount"].d();
+
+        // VULNERABILITY: Race condition - no atomic transaction
+        double currentBalance = db.getBalance(userId);
+        
+        if (currentBalance >= amount && amount > 0)
+        {
+            double newBalance = currentBalance - amount;
+            db.updateBalance(userId, newBalance);
+
+            crow::json::wvalue response;
+            response["success"] = true;
+            response["newBalance"] = newBalance;
+            response["message"] = "Withdrawal successful";
+            
+            return crow::response(200, response);
+        }
+        else
+        {
+            crow::json::wvalue response;
+            response["success"] = false;
+            response["message"] = "Insufficient funds";
+            return crow::response(400, response);
+        }
+    });
+
+    // Static file serving for frontend
+    CROW_ROUTE(app, "/")
+    ([](){
+        // Serve login page
+        std::ifstream file("public/login.html");
+        if (file)
+        {
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            return crow::response(buffer.str());
+        }
+        return crow::response(404, "File not found");
+    });
+
+    std::cout << "Bank Server starting on port 8080..." << std::endl;
+    std::cout << "WARNING: This server contains INTENTIONAL vulnerabilities!" << std::endl;
+    std::cout << "For educational purposes only!\n" << std::endl;
+
+    app.port(8080).multithreaded().run();
+}
+````
+
+**Vulnerabilities Demonstrated:**
+1. **SQL Injection**: Raw SQL queries in `authenticateUser()`
+2. **IDOR**: `/api/balance/<userId>` accessible without authentication
+3. **Predictable Session Tokens**: Sequential counter
+4. **No CSRF Protection**: State-changing endpoints accept any request
+5. **Race Condition**: Balance check and update not atomic
+6. **Information Disclosure**: Error messages reveal usernames exist
+7. **No Rate Limiting**: Brute force attacks possible
+
+---
+
+## Next Steps
+
+Now try this:
+
+1. **Compile the server:**
+````makefile
+# Add to Makefile
+server: server.cpp database.h
+	$(CXX) $(CXXFLAGS) -o server server.cpp -lsqlite3 $(LDFLAGS)
+````
+
+2. **Create the database:**
+```bash
+sqlite3 bank.db < schema.sql
+```
+
+3. **Run the server:**
+```bash
+make server
+./server
+```
+
+4. **Test SQL injection:**
+```bash
+curl -X POST http://localhost:8080/api/login \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"admin' OR '1'='1\", \"password\":\"anything\"}"
+```
+
+This should return success even with wrong password!
+
+**Would you like me to continue with:**
+- Phase 4: Creating the HTML/JavaScript frontend?
+- Phase 5: Adding more vulnerability types?
+- Phase 6: Raspberry Pi deployment setup?
+
+Let me know which part you want to tackle next!
