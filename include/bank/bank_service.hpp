@@ -10,31 +10,31 @@ namespace bank
     {
         bool ok = false;
         std::string username;
-        bool is_manager = flase;
+        bool is_manager = false;
         std::string message;
     };
 
-    sruct ActionResult 
+    struct ActionResult 
     {
-        bool ok = flase;
+        bool ok = false;
         std::string message;
     };
 
     class BankService
     {
         public:
-            BankService(database& db, SecurityConfig cfg);
+            BankService(Database& db, SecurityConfig cfg);
 
             AuthResult register_user(const std::string& username, const std::string& password);
             AuthResult login_user(const std::string& username, const std::string& password);
             AuthResult login_manager(const std::string& username, const std::string& password);
 
-            ActionResult deposit(const std::string& username, double amount):
+            ActionResult deposit(const std::string& username, double amount);
             ActionResult withdraw(const std::string& username, double amount);
-            ActionResult transfer(const std::string& from_user, const std::string& to_use,r double amount);
+            ActionResult transfer(const std::string& from_user, const std::string& to_user, double amount);
 
-            double balance_op(const std::string& username) const;
-            const Securityonfig& config() const;
+            double balance_of(const std::string& username) const;
+            const SecurityConfig& config() const;
 
         private:
             Database& database_;

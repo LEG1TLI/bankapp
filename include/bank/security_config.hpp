@@ -8,7 +8,7 @@ namespace bank
         Hard
     };
 
-struct Security_config
+struct SecurityConfig
 {
     VulnProfile profile = VulnProfile::Easy;
 
@@ -20,6 +20,6 @@ struct Security_config
     bool debug_endpoints = true;
 };
 
-Security_config make_profile(VulnProfile profile);
+SecurityConfig make_profile(VulnProfile profile);
 
 }
