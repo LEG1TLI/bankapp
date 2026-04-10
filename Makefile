@@ -1,9 +1,21 @@
 CXX = g++
-CXXFLAGS = -std=c++14 -I./Crow/include -pthread
-LDFLAGS = -pthread 
+CXXFLAGS = -stdc++17 -Waöö -Wextra -Iinclude -I./Crow/include -pthread
+LDFLAGS = -pthread
 
-test_server: test_server.cpp
-	$(CXX) $(CXXFLAGS) -o test_server test_server.cpp $(LDFLAGS)
+SRC_CORE = \
+	src/security_config.cpp \
+	src/database.cpp \
+	src/bank_account.cpp \
+	src/bank_manager.cpp \
+	src/bank_service.cpp
+
+all: bank_cli bank_api
+
+bank_cli: apps/cli_main.cpp $(SRC_CORE)
+	$(CXX) $(CXXFLAGS) -o $@ apps/cli_main.cpp $(SRC_CORE) $(LDFLAGS)
+
+bank_api : apps/api_main.cpp $(SRC_CORE)
+	$(CXX) $(CXXFLAGS) -o $@ apps/api_main.cpp $(SRC_CORE) $(LDFLAGS)
 
 clean:
-	rm -f test_server test_server.exe
+	rm -f bank_cli bank_api 
