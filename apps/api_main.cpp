@@ -26,7 +26,7 @@ static std::string bearer_topen(const crow::request& req)
 int main(int argc, char** argv)
 {
     bank::Database db;
-    ank::SecurityConfig cfg = bank::make_profile(parse_profile(argc, argv));
+    bank::SecurityConfig cfg = bank::make_profile(parse_profile(argc, argv));
     bank::BankService service(db, cfg);
 
     crow::SimpleApp app;
@@ -41,12 +41,12 @@ int main(int argc, char** argv)
     CROW_ROUTE(app, "/register").methods("POST"_method)
     ([&service](const crow::request& req)
     {
-        auto body = cow::json::load(req.body);
+        auto body = crow::json::load(req.body);
         if (!body) return crow::response(400, "invalid json");
 
         std::string username = body["username"].s();
         std::string password = body["password"].s();
-        suto r = service.register_user(username, password);
+        auto r = service.register_user(username, password);
 
         crow::json::wvalue out;
         out["ok"] = r.ok;
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
     ([&service, &sessions](const crow::request& req)
     {
         std::string token = bearer_token(req);
-        if (token.empty() || sessions.find(token) == sessopms.end())
+        if (token.empty() || sessions.find(token) == sessions.end())
         {
             return crow::response(401, "unauthorized");
         }
